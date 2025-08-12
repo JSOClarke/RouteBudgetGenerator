@@ -58,3 +58,28 @@ export interface RouteTableProps {
   prices: number[][] | null;
   optimizedOrder: number[];
 }
+
+export interface CostConfigurationProps {
+  costConfig: CostConfig;
+  setCostConfig: (config: CostConfig) => void;
+}
+
+export interface PostcodeUploadProps {
+  postcodes: PostcodeData[];
+  setPostcodes: (postcodes: PostcodeData[]) => void;
+  loadingGeocode: boolean;
+  setLoadingGeocode: (loading: boolean) => void;
+  geocode: (query: string) => Promise<[number, number] | null>;
+  coordinates: [number, number][];
+  loadingMatrix: boolean;
+  matrixError: string | null;
+  onGenerateMatrix: () => void;
+}
+
+export interface RouteOptimizationProps {
+  routeStrategy: string;
+  setRouteStrategy: (strategy: string) => void;
+  optimizedOrder: number[];
+  postcodes: PostcodeData[];
+  onOptimizeRoute: (strategy: string) => void;
+}

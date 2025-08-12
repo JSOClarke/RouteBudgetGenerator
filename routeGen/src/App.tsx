@@ -1,10 +1,12 @@
 import { useState } from "react";
-import Papa from "papaparse";
 import { useGeocode } from "./hooks/useGeocode";
 import { useORSMatrix } from "./hooks/useORSMatrix";
-import MatrixTable from "./components/MatrixTable";
+import CostConfiguration from "./components/CostConfiguration";
+import PostcodeUpload from "./components/PostcodeUpload";
+import RouteOptimization from "./components/RouteOptimization";
 import RouteTable from "./components/RouteTable";
-import type { PostcodeData, CostConfig, TripTotals } from "./types";
+import MatrixTable from "./components/MatrixTable";
+import type { PostcodeData, CostConfig } from "./types";
 
 function App() {
   const [postcodes, setPostcodes] = useState<PostcodeData[]>([]);
@@ -23,36 +25,6 @@ function App() {
   const [optimizedOrder, setOptimizedOrder] = useState<number[]>([]);
   const [showMatrixTable, setShowMatrixTable] = useState<boolean>(false);
 
-  // Cost configuration tooltips with explanations and averages
-  const costConfigTooltips = {
-    fuelPrice: {
-      description: "Current fuel price per litre",
-      average: "UK average: £1.40-£1.60",
-      unit: "£/L",
-    },
-    fuelConsumption: {
-      description: "Vehicle fuel consumption rate",
-      average: "Van average: 7-10 L/100km",
-      unit: "L/100km",
-    },
-    hourlyRate: {
-      description: "Driver hourly wage including benefits",
-      average: "UK average: £12-£18/hour",
-      unit: "£/hour",
-    },
-    overheadPerKm: {
-      description:
-        "Vehicle overhead costs (insurance, maintenance, depreciation)",
-      average: "Typical range: £0.03-£0.08/km",
-      unit: "£/km",
-    },
-    profitMargin: {
-      description: "Business profit margin on top of costs",
-      average: "Industry standard: 15-25%",
-      unit: "%",
-    },
-  };
-
   const {
     fetchMatrix,
     loading: loadingMatrix,
@@ -60,54 +32,6 @@ function App() {
     durationMatrix,
     distanceMatrix,
   } = useORSMatrix();
-
-  // Upload, parse CSV, and geocode automatically
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    Papa.parse<any>(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results: Papa.ParseResult<any>) => {
-        const rawData: PostcodeData[] = results.data.map((item: any) => ({
-          ...item,
-          coords: null as [number, number] | null,
-          geocodeError: null as string | null,
-        }));
-        setPostcodes(rawData);
-
-        // Start silent geocoding
-        setLoadingGeocode(true);
-        const updated: PostcodeData[] = [];
-        for (const item of rawData) {
-          if (!item.Postcode) {
-            updated.push({
-              ...item,
-              coords: null,
-              geocodeError: "No postcode",
-            });
-            continue;
-          }
-          try {
-            const coords = await geocode(item.Postcode);
-            updated.push({
-              ...item,
-              coords,
-              geocodeError: coords ? null : "Not found",
-            });
-          } catch (err) {
-            const errorMessage =
-              err instanceof Error ? err.message : "Unknown error";
-            updated.push({ ...item, coords: null, geocodeError: errorMessage });
-          }
-        }
-        setPostcodes(updated);
-        setLoadingGeocode(false);
-      },
-      error: (err: Error) => console.error("CSV parse error:", err),
-    });
-  };
 
   // Extract coordinates for matrix call
   const coordinates = postcodes
@@ -119,6 +43,9 @@ function App() {
   // Get matrix
   const handleGetMatrix = () => {
     fetchMatrix(coordinates);
+    // Set default strategy to original and create initial route order
+    setRouteStrategy("original");
+    setOptimizedOrder(Array.from({ length: coordinates.length }, (_, i) => i));
   };
 
   // Route optimization algorithms
@@ -305,349 +232,35 @@ function App() {
     margin: "0 0 1.5rem 0",
   };
 
-  const configGridStyle: React.CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-    gap: "1rem",
-  };
-
-  const inputGroupStyle: React.CSSProperties = {
-    display: "flex",
-    flexDirection: "column",
-    gap: "0.5rem",
-  };
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: "0.875rem",
-    fontWeight: "500",
-    color: "#4a5568",
-    textTransform: "capitalize",
-  };
-
-  const inputStyle: React.CSSProperties = {
-    padding: "0.75rem",
-    border: "1px solid #e2e8f0",
-    borderRadius: "6px",
-    fontSize: "0.875rem",
-    transition: "border-color 0.2s",
-    outline: "none",
-  };
-
-  const fileInputStyle: React.CSSProperties = {
-    padding: "1rem",
-    border: "2px dashed #cbd5e0",
-    borderRadius: "8px",
-    textAlign: "center",
-    cursor: "pointer",
-    transition: "border-color 0.2s",
-    backgroundColor: "#f7fafc",
-  };
-
-  const buttonStyle: React.CSSProperties = {
-    backgroundColor: "#4299e1",
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    padding: "0.875rem 1.5rem",
-    fontSize: "0.875rem",
-    fontWeight: "500",
-    cursor: "pointer",
-    transition: "background-color 0.2s",
-    disabled: loadingMatrix || loadingGeocode || coordinates.length < 2,
-  };
-
-  const disabledButtonStyle: React.CSSProperties = {
-    ...buttonStyle,
-    backgroundColor: "#a0aec0",
-    cursor: "not-allowed",
-  };
-
-  const errorStyle: React.CSSProperties = {
-    color: "#e53e3e",
-    fontSize: "0.875rem",
-    padding: "0.75rem",
-    backgroundColor: "#fed7d7",
-    border: "1px solid #feb2b2",
-    borderRadius: "6px",
-    marginTop: "1rem",
-  };
-
   return (
     <div style={containerStyle}>
       <h1 style={headerStyle}>Route Matrix Planner</h1>
 
-      <div style={sectionStyle}>
-        <h2 style={sectionTitleStyle}>Cost Configuration</h2>
-        <div style={configGridStyle}>
-          {Object.entries(costConfig).map(([key, value]: [string, number]) => {
-            const tooltip =
-              costConfigTooltips[key as keyof typeof costConfigTooltips];
-            return (
-              <div key={key} style={inputGroupStyle}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                  }}
-                >
-                  <label style={labelStyle}>
-                    {key.replace(/([A-Z])/g, " $1")}
-                  </label>
-                  <div
-                    style={{
-                      position: "relative",
-                      display: "inline-block",
-                      cursor: "help",
-                    }}
-                    title={`${tooltip.description}\n${tooltip.average}`}
-                  >
-                    <span
-                      style={{
-                        fontSize: "0.75rem",
-                        color: "#718096",
-                        backgroundColor: "#e2e8f0",
-                        borderRadius: "50%",
-                        width: "16px",
-                        height: "16px",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: "500",
-                      }}
-                    >
-                      ?
-                    </span>
-                  </div>
-                </div>
-                <input
-                  type="number"
-                  value={value}
-                  step="0.01"
-                  style={inputStyle}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setCostConfig({
-                      ...costConfig,
-                      [key]: parseFloat(e.target.value),
-                    })
-                  }
-                />
-                <div
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "#718096",
-                    marginTop: "0.25rem",
-                  }}
-                >
-                  {tooltip.description}
-                </div>
-                <div
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "#4a5568",
-                    fontWeight: "500",
-                  }}
-                >
-                  {tooltip.average}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      <CostConfiguration
+        costConfig={costConfig}
+        setCostConfig={setCostConfig}
+      />
 
-      <div style={sectionStyle}>
-        <h2 style={sectionTitleStyle}>Upload Postcodes</h2>
-
-        <div
-          style={{
-            marginBottom: "1.5rem",
-            padding: "1rem",
-            backgroundColor: "#f0f9ff",
-            borderRadius: "6px",
-            border: "1px solid #bfdbfe",
-          }}
-        >
-          <div
-            style={{
-              fontSize: "0.875rem",
-              fontWeight: "500",
-              marginBottom: "0.5rem",
-              color: "#1e40af",
-            }}
-          >
-            � Requir ed CSV Format
-          </div>
-          <div
-            style={{
-              fontSize: "0.8rem",
-              color: "#374151",
-              marginBottom: "0.75rem",
-            }}
-          >
-            Your CSV file must have a column named <strong>"Postcode"</strong>{" "}
-            containing UK postcodes. Additional columns are allowed.
-          </div>
-          <div
-            style={{
-              backgroundColor: "white",
-              padding: "0.75rem",
-              borderRadius: "4px",
-              fontFamily: "monospace",
-              fontSize: "0.75rem",
-              border: "1px solid #e5e7eb",
-            }}
-          >
-            <div style={{ color: "#6b7280", marginBottom: "0.25rem" }}>
-              Example CSV content:
-            </div>
-            <div>Postcode,Customer,Address</div>
-            <div>SW1A 1AA,Customer A,Buckingham Palace</div>
-            <div>E1 6AN,Customer B,Tower of London</div>
-            <div>W1A 0AX,Customer C,BBC Broadcasting House</div>
-          </div>
-        </div>
-
-        <div style={fileInputStyle}>
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleFileUpload}
-            style={{ display: "none" }}
-            id="csv-upload"
-          />
-          <label htmlFor="csv-upload" style={{ cursor: "pointer" }}>
-            📁 Choose CSV file with postcodes
-          </label>
-        </div>
-
-        {postcodes.length > 0 && (
-          <div
-            style={{
-              marginTop: "1rem",
-              fontSize: "0.875rem",
-              color: "#718096",
-            }}
-          >
-            {postcodes.length} postcodes loaded
-          </div>
-        )}
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            marginTop: "1.5rem",
-          }}
-        >
-          <button
-            onClick={handleGetMatrix}
-            disabled={loadingMatrix || loadingGeocode || coordinates.length < 2}
-            style={
-              loadingMatrix || loadingGeocode || coordinates.length < 2
-                ? disabledButtonStyle
-                : buttonStyle
-            }
-            onMouseOver={(e) => {
-              if (!e.currentTarget.disabled) {
-                e.currentTarget.style.backgroundColor = "#3182ce";
-              }
-            }}
-            onMouseOut={(e) => {
-              if (!e.currentTarget.disabled) {
-                e.currentTarget.style.backgroundColor = "#4299e1";
-              }
-            }}
-          >
-            {loadingMatrix
-              ? "⏳ Loading Matrix..."
-              : loadingGeocode
-              ? "� Geoacoding..."
-              : "🚀 Generate Matrix"}
-          </button>
-        </div>
-
-        {matrixError && <div style={errorStyle}>⚠️ {matrixError}</div>}
-      </div>
+      <PostcodeUpload
+        postcodes={postcodes}
+        setPostcodes={setPostcodes}
+        loadingGeocode={loadingGeocode}
+        setLoadingGeocode={setLoadingGeocode}
+        geocode={geocode}
+        coordinates={coordinates}
+        loadingMatrix={loadingMatrix}
+        matrixError={matrixError}
+        onGenerateMatrix={handleGetMatrix}
+      />
 
       {distanceMatrix && durationMatrix && (
-        <div style={sectionStyle}>
-          <h2 style={sectionTitleStyle}>Route Optimization</h2>
-          <div style={{ marginBottom: "1.5rem" }}>
-            <label style={labelStyle}>Optimization Strategy</label>
-            <select
-              value={routeStrategy}
-              onChange={(e) => {
-                setRouteStrategy(e.target.value);
-                optimizeRoute(e.target.value);
-              }}
-              style={{
-                ...inputStyle,
-                marginTop: "0.5rem",
-                cursor: "pointer",
-              }}
-            >
-              <option value="original">Original Order (CSV sequence)</option>
-              <option value="nearest">
-                Nearest Neighbor (TSP approximation)
-              </option>
-              <option value="shortest">Shortest Distance First</option>
-              <option value="fastest">Fastest Time First</option>
-            </select>
-          </div>
-
-          <div style={{ fontSize: "0.875rem", color: "#718096" }}>
-            <div style={{ marginBottom: "0.5rem" }}>
-              <strong>Strategy Explanations:</strong>
-            </div>
-            <div style={{ marginBottom: "0.25rem" }}>
-              • <strong>Original Order:</strong> Uses postcodes in CSV file
-              order
-            </div>
-            <div style={{ marginBottom: "0.25rem" }}>
-              • <strong>Nearest Neighbor:</strong> Always goes to closest
-              unvisited location (good TSP approximation)
-            </div>
-            <div style={{ marginBottom: "0.25rem" }}>
-              • <strong>Shortest Distance:</strong> Prioritizes shortest
-              individual segments
-            </div>
-            <div style={{ marginBottom: "0.25rem" }}>
-              • <strong>Fastest Time:</strong> Prioritizes quickest individual
-              segments
-            </div>
-          </div>
-
-          {optimizedOrder.length > 0 && (
-            <div
-              style={{
-                marginTop: "1rem",
-                padding: "1rem",
-                backgroundColor: "#f0f9ff",
-                borderRadius: "6px",
-                border: "1px solid #bfdbfe",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "0.875rem",
-                  fontWeight: "500",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                Optimized Route Order:
-              </div>
-              <div style={{ fontSize: "0.875rem", color: "#374151" }}>
-                {optimizedOrder.map((index, i) => (
-                  <span key={index}>
-                    {postcodes[index]?.Postcode}
-                    {i < optimizedOrder.length - 1 ? " → " : ""}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        <RouteOptimization
+          routeStrategy={routeStrategy}
+          setRouteStrategy={setRouteStrategy}
+          optimizedOrder={optimizedOrder}
+          postcodes={postcodes}
+          onOptimizeRoute={optimizeRoute}
+        />
       )}
 
       {distanceMatrix &&
