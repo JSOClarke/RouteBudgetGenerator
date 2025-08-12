@@ -2,7 +2,8 @@ import { useState, useCallback } from "react";
 import type { GeocodeHook } from "../types";
 
 const ORS_API_KEY =
-  "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImYwOTA4Mjg4MzYwMzQ5YmI5YjkxMTc3ZjY0Y2FhM2I1IiwiaCI6Im11cm11cjY0In0="; // replace with your actual key
+  import.meta.env.VITE_ORS_API_KEY ||
+  "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImYwOTA4Mjg4MzYwMzQ5YmI5YjkxMTc3ZjY0Y2FhM2I1IiwiaCI6Im11cm11cjY0In0=";
 
 export function useGeocode(): GeocodeHook {
   const [loading, setLoading] = useState<boolean>(false);

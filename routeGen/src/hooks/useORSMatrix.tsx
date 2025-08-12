@@ -2,7 +2,8 @@ import { useState, useCallback } from "react";
 import type { ORSMatrixHook } from "../types";
 
 const ORS_API_KEY =
-  "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImYwOTA4Mjg4MzYwMzQ5YmI5YjkxMTc3ZjY0Y2FhM2I1IiwiaCI6Im11cm11cjY0In0="; // replace with your actual ORS API key
+  import.meta.env.VITE_ORS_API_KEY ||
+  "eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImYwOTA4Mjg4MzYwMzQ5YmI5YjkxMTc3ZjY0Y2FhM2I1IiwiaCI6Im11cm11cjY0In0=";
 
 export function useORSMatrix(): ORSMatrixHook {
   const [loading, setLoading] = useState<boolean>(false);

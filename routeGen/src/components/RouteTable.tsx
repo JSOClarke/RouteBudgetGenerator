@@ -1,4 +1,4 @@
-import type { PostcodeData, RouteTableProps } from "../types";
+import type { RouteTableProps } from "../types";
 
 export default function RouteTable({
   postcodes,

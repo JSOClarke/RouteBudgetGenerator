@@ -1,5 +1,3 @@
-import { Plus, PlusCircle } from "lucide-react";
-
 interface HeaderBarProps {
   handleFileUpload: () => void;
 }
