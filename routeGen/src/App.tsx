@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useGeocode } from "./hooks/useGeocode";
 import { useORSMatrix } from "./hooks/useORSMatrix";
+import Sidebar from "./components/Sidebar";
 import CostConfiguration from "./components/CostConfiguration";
 import PostcodeUpload from "./components/PostcodeUpload";
 import RouteOptimization from "./components/RouteOptimization";
@@ -24,6 +25,18 @@ function App() {
   const [routeStrategy, setRouteStrategy] = useState<string>("original");
   const [optimizedOrder, setOptimizedOrder] = useState<number[]>([]);
   const [showMatrixTable, setShowMatrixTable] = useState<boolean>(false);
+  const [activeSection, setActiveSection] = useState<string>("cost-config");
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const {
     fetchMatrix,
@@ -196,22 +209,38 @@ function App() {
         )
       : null;
 
-  const containerStyle: React.CSSProperties = {
-    maxWidth: "1200px",
-    margin: "0 auto",
-    padding: "2rem",
+  const appStyle: React.CSSProperties = {
+    display: "flex",
+    minHeight: "100vh",
     fontFamily:
       "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    backgroundColor: "#f7fafc",
+  };
+
+  const mainContentStyle: React.CSSProperties = {
+    marginLeft: isMobile ? "0" : "280px",
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    padding: isMobile ? "1rem" : "2rem",
+    paddingTop: isMobile ? "5rem" : "2rem", // Account for mobile toggle button
     color: "#2d3748",
     lineHeight: "1.6",
+    minHeight: "100vh",
+  };
+
+  const contentContainerStyle: React.CSSProperties = {
+    width: "100%",
+    maxWidth: "1200px",
+    margin: "0 auto",
   };
 
   const headerStyle: React.CSSProperties = {
     fontSize: "2rem",
     fontWeight: "300",
     color: "#1a202c",
-    marginBottom: "3rem",
-    textAlign: "center",
+    marginBottom: "2rem",
     letterSpacing: "-0.025em",
   };
 
@@ -219,7 +248,6 @@ function App() {
     backgroundColor: "white",
     borderRadius: "12px",
     padding: "2rem",
-    marginBottom: "2rem",
     boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
     border: "1px solid #e2e8f0",
   };
@@ -232,102 +260,52 @@ function App() {
     margin: "0 0 1.5rem 0",
   };
 
-  return (
-    <div style={containerStyle}>
-      <h1 style={headerStyle}>Route Matrix Planner</h1>
-
-      <CostConfiguration
-        costConfig={costConfig}
-        setCostConfig={setCostConfig}
-      />
-
-      <PostcodeUpload
-        postcodes={postcodes}
-        setPostcodes={setPostcodes}
-        loadingGeocode={loadingGeocode}
-        setLoadingGeocode={setLoadingGeocode}
-        geocode={geocode}
-        coordinates={coordinates}
-        loadingMatrix={loadingMatrix}
-        matrixError={matrixError}
-        onGenerateMatrix={handleGetMatrix}
-      />
-
-      {distanceMatrix && durationMatrix && (
-        <RouteOptimization
-          routeStrategy={routeStrategy}
-          setRouteStrategy={setRouteStrategy}
-          optimizedOrder={optimizedOrder}
-          postcodes={postcodes}
-          onOptimizeRoute={optimizeRoute}
-        />
-      )}
-
-      {distanceMatrix &&
-        durationMatrix &&
-        pricesMatrix &&
-        optimizedOrder.length > 0 && (
+  const renderActiveSection = () => {
+    switch (activeSection) {
+      case "cost-config":
+        return (
           <div style={sectionStyle}>
-            <h2 style={sectionTitleStyle}>Route Breakdown</h2>
-            <RouteTable
+            <h2 style={sectionTitleStyle}>Cost Configuration</h2>
+            <CostConfiguration
+              costConfig={costConfig}
+              setCostConfig={setCostConfig}
+            />
+          </div>
+        );
+
+      case "postcode-upload":
+        return (
+          <div style={sectionStyle}>
+            <h2 style={sectionTitleStyle}>Postcode Upload</h2>
+            <PostcodeUpload
               postcodes={postcodes}
-              durations={durationMatrix}
-              distances={distanceMatrix}
-              prices={pricesMatrix}
+              setPostcodes={setPostcodes}
+              loadingGeocode={loadingGeocode}
+              setLoadingGeocode={setLoadingGeocode}
+              geocode={geocode}
+              coordinates={coordinates}
+              loadingMatrix={loadingMatrix}
+              matrixError={matrixError}
+              onGenerateMatrix={handleGetMatrix}
+            />
+          </div>
+        );
+
+      case "route-optimization":
+        return distanceMatrix && durationMatrix ? (
+          <div style={sectionStyle}>
+            <h2 style={sectionTitleStyle}>Route Optimization</h2>
+            <RouteOptimization
+              routeStrategy={routeStrategy}
+              setRouteStrategy={setRouteStrategy}
               optimizedOrder={optimizedOrder}
-            />
-          </div>
-        )}
-
-      {distanceMatrix && durationMatrix && (
-        <div style={sectionStyle}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "1rem",
-            }}
-          >
-            <h2 style={sectionTitleStyle}>Distance & Duration Matrix</h2>
-            <button
-              onClick={() => setShowMatrixTable(!showMatrixTable)}
-              style={{
-                backgroundColor: showMatrixTable ? "#e53e3e" : "#4299e1",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                padding: "0.5rem 1rem",
-                fontSize: "0.75rem",
-                fontWeight: "500",
-                cursor: "pointer",
-                transition: "background-color 0.2s",
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = showMatrixTable
-                  ? "#c53030"
-                  : "#3182ce";
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = showMatrixTable
-                  ? "#e53e3e"
-                  : "#4299e1";
-              }}
-            >
-              {showMatrixTable ? "🙈 Hide Matrix" : "👁️ Show Matrix"}
-            </button>
-          </div>
-
-          {showMatrixTable && (
-            <MatrixTable
               postcodes={postcodes}
-              durations={durationMatrix}
-              distances={distanceMatrix}
-              prices={pricesMatrix}
+              onOptimizeRoute={optimizeRoute}
             />
-          )}
-
-          {!showMatrixTable && (
+          </div>
+        ) : (
+          <div style={sectionStyle}>
+            <h2 style={sectionTitleStyle}>Route Optimization</h2>
             <div
               style={{
                 padding: "2rem",
@@ -339,12 +317,150 @@ function App() {
                 border: "2px dashed #cbd5e0",
               }}
             >
-              Matrix table is hidden. Click "Show Matrix" to view the full
-              distance and duration matrix.
+              Please upload postcodes and generate the distance matrix first.
             </div>
-          )}
+          </div>
+        );
+
+      case "route-breakdown":
+        return distanceMatrix &&
+          durationMatrix &&
+          pricesMatrix &&
+          optimizedOrder.length > 0 ? (
+          <div style={sectionStyle}>
+            <h2 style={sectionTitleStyle}>Route Breakdown</h2>
+            <RouteTable
+              postcodes={postcodes}
+              durations={durationMatrix}
+              distances={distanceMatrix}
+              prices={pricesMatrix}
+              optimizedOrder={optimizedOrder}
+            />
+          </div>
+        ) : (
+          <div style={sectionStyle}>
+            <h2 style={sectionTitleStyle}>Route Breakdown</h2>
+            <div
+              style={{
+                padding: "2rem",
+                textAlign: "center",
+                color: "#718096",
+                fontSize: "0.875rem",
+                backgroundColor: "#f7fafc",
+                borderRadius: "8px",
+                border: "2px dashed #cbd5e0",
+              }}
+            >
+              Please complete route optimization first to view the breakdown.
+            </div>
+          </div>
+        );
+
+      case "matrix-view":
+        return distanceMatrix && durationMatrix ? (
+          <div style={sectionStyle}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1rem",
+              }}
+            >
+              <h2 style={sectionTitleStyle}>Distance & Duration Matrix</h2>
+              <button
+                onClick={() => setShowMatrixTable(!showMatrixTable)}
+                style={{
+                  backgroundColor: showMatrixTable ? "#e53e3e" : "#4299e1",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  padding: "0.5rem 1rem",
+                  fontSize: "0.75rem",
+                  fontWeight: "500",
+                  cursor: "pointer",
+                  transition: "background-color 0.2s",
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = showMatrixTable
+                    ? "#c53030"
+                    : "#3182ce";
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = showMatrixTable
+                    ? "#e53e3e"
+                    : "#4299e1";
+                }}
+              >
+                {showMatrixTable ? "🙈 Hide Matrix" : "👁️ Show Matrix"}
+              </button>
+            </div>
+
+            {showMatrixTable && (
+              <MatrixTable
+                postcodes={postcodes}
+                durations={durationMatrix}
+                distances={distanceMatrix}
+                prices={pricesMatrix}
+              />
+            )}
+
+            {!showMatrixTable && (
+              <div
+                style={{
+                  padding: "2rem",
+                  textAlign: "center",
+                  color: "#718096",
+                  fontSize: "0.875rem",
+                  backgroundColor: "#f7fafc",
+                  borderRadius: "8px",
+                  border: "2px dashed #cbd5e0",
+                }}
+              >
+                Matrix table is hidden. Click "Show Matrix" to view the full
+                distance and duration matrix.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={sectionStyle}>
+            <h2 style={sectionTitleStyle}>Distance & Duration Matrix</h2>
+            <div
+              style={{
+                padding: "2rem",
+                textAlign: "center",
+                color: "#718096",
+                fontSize: "0.875rem",
+                backgroundColor: "#f7fafc",
+                borderRadius: "8px",
+                border: "2px dashed #cbd5e0",
+              }}
+            >
+              Please upload postcodes and generate the matrix first.
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div style={appStyle}>
+      <Sidebar
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+        hasData={postcodes.length > 0}
+        hasMatrix={!!(distanceMatrix && durationMatrix)}
+      />
+
+      <main style={mainContentStyle}>
+        <div style={contentContainerStyle}>
+          <h1 style={headerStyle}>Route Matrix Planner</h1>
+          {renderActiveSection()}
         </div>
-      )}
+      </main>
     </div>
   );
 }
