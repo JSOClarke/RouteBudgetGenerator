@@ -236,14 +236,6 @@ function App() {
     margin: "0 auto",
   };
 
-  const headerStyle: React.CSSProperties = {
-    fontSize: "2rem",
-    fontWeight: "300",
-    color: "#1a202c",
-    marginBottom: "2rem",
-    letterSpacing: "-0.025em",
-  };
-
   const sectionStyle: React.CSSProperties = {
     backgroundColor: "white",
     borderRadius: "12px",
