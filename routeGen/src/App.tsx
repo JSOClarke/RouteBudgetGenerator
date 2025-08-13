@@ -456,10 +456,7 @@ function App() {
       />
 
       <main style={mainContentStyle}>
-        <div style={contentContainerStyle}>
-          <h1 style={headerStyle}>Route Matrix Planner</h1>
-          {renderActiveSection()}
-        </div>
+        <div style={contentContainerStyle}>{renderActiveSection()}</div>
       </main>
     </div>
   );
