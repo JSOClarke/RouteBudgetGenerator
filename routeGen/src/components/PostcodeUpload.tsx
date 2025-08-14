@@ -228,7 +228,7 @@ export default function PostcodeUpload({
               }
             }}
           >
-            📁 CSV Upload
+            CSV Upload
           </button>
           <button
             style={inputMethod === "manual" ? activeTabStyle : inactiveTabStyle}
@@ -244,7 +244,7 @@ export default function PostcodeUpload({
               }
             }}
           >
-            ✏️ Manual Input
+            Manual Input
           </button>
         </div>
       </div>

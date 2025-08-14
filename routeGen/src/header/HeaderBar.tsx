@@ -4,7 +4,7 @@ interface HeaderBarProps {
 export default function HeaderBar({ handleFileUpload }: HeaderBarProps) {
   return (
     <div className="text-white  flex items-center justify-between p-2">
-      Route Planner
+      Ikenea
       <input type="file" accept=".csv" onChange={handleFileUpload} />
     </div>
   );

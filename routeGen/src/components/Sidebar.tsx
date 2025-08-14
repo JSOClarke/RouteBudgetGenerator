@@ -170,7 +170,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar */}
       <div style={sidebarStyle}>
-        <div style={logoStyle}>🗺️ Route Planner</div>
+        <div style={logoStyle}>JRDN OpenSource Route Planner</div>
 
         <nav>
           {navigationItems.map((section) => (
@@ -222,10 +222,10 @@ const Sidebar: React.FC<SidebarProps> = ({
         >
           {hasData && (
             <div style={{ marginBottom: "0.5rem" }}>
-              📍 {hasData ? "Data loaded" : "No data"}
+              {hasData ? "Data loaded" : "No data"}
             </div>
           )}
-          {hasMatrix && <div>🔗 Matrix generated</div>}
+          {hasMatrix && <div> Matrix generated</div>}
         </div>
       </div>
     </>

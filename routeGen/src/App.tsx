@@ -384,7 +384,7 @@ function App() {
                     : "#4299e1";
                 }}
               >
-                {showMatrixTable ? "🙈 Hide Matrix" : "👁️ Show Matrix"}
+                {showMatrixTable ? " Hide Matrix" : " Show Matrix"}
               </button>
             </div>
 
